@@ -1,0 +1,16 @@
+---
+# tasks file for orion-node-manage
+# Install requirements
+- pip:
+    name: orionsdk
+
+- name: install requirements
+  pip:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - orionsdk
+    - requests
+    - traceback
+    - datetime
+    - pandas
