@@ -1,4 +1,4 @@
-Role Name
+orion-node-manage
 =========
 
 This role provides the orion_node_manage module for Unmanaging and Remanaging Nodes in Orion. It can be used to suppress alerts during maintenance of Orion managed systems. 
