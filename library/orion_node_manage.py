@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 import pandas as pd
 
-ANSIBLE_METADATA = {'metadata_version': '1.1',
+ANSIBLE_METADATA = {'metadata_version': '1.2',
                     'status': ['preview'],
                     'supported_by': 'community'}
 
@@ -20,60 +20,60 @@ description:
 - "Unmanage/Remanage nodes within Orion"
 version_added: "2.0"
 author: "Asa Gage (@asagage)"
-requirements: 
+requirements:
     - orionsdk
     - datetime
     - requests
     - pandas
     - traceback
 options:
-    hostname: 
-        description: 
+    hostname:
+        description:
             - Your Orion instance hostname.
         required: true
     username:
-        description: 
-            - Your Orion username. 
+        description:
+            - Your Orion username.
             - Note: Active Directory users must use DOMAIN\\username format to avoid 403 errors.
         required: true
     password:
-        description: 
+        description:
             - Your Orion password.
         required: true
     state:
-        description: 
+        description:
             - The designated state of the node.
         required: true
-        choices: 
+        choices:
             - managed
             - unmanaged
     node_id:
-        description: 
+        description:
             - The NodeID of the node to remanage/unmanage.
             - Must provide either a node_id or an ip_address.
         required: false
     ip_address:
-        description: 
+        description:
             - The ip address of the node to remanage/unmanage.
             - Must provide either a node_id or an ip_address.
         required: false
     unmanage_from:
-        description: 
+        description:
             - The date and time (in ISO 8601 UTC format) to begin the unmanage period.
             - If this is in the past, the node will be unmanaged effective immediately.
             - If not provided, module defaults to now.
             - ex: "2017-02-21T12:00:00Z"
         required: false
-    unmanage_until: 
-        description: 
-            - The date and time (in ISO 8601 UTC format) to end the unmanage period. 
+    unmanage_until:
+        description:
+            - The date and time (in ISO 8601 UTC format) to end the unmanage period.
             - You can set this as far in the future as you like.
             - If not provided, module defaults to 24 hours from now.
             - ex: "2017-02-21T12:00:00Z"
         required: false
     is_relative:
-        description: 
-            - If true, then the unmanage_until argument will be interpreted differently: 
+        description:
+            - If true, then the unmanage_until argument will be interpreted differently:
             - The date portion will be ignored and the time portion will be treated as a duration.
         required: false
         default: 'no'
@@ -88,7 +88,7 @@ EXAMPLES = '''
     hostname: "localhost"
     username: "username"
     password: "password"
-    
+
 # Remanage a node
 - orion_node_manage:
     node_id: "123"
@@ -211,6 +211,9 @@ def unmanage_node(module):
 
     if not unmanage_until:
         unmanage_until = tomorrow
+
+    if not unmanage_from:
+        unmanage_from = now
 
     if not node:
         module.fail_json(msg="Monitor not found!")
