@@ -57,6 +57,10 @@ options:
             - The ip address of the node to remanage/unmanage.
             - Must provide either a node_id or an ip_address.
         required: false
+    dns_name:
+        description:
+            - The DNS name of the node to remanage/unmanage.
+            - Must provide either a node_id or an ip_address.
     unmanage_from:
         description:
             - The date and time (in ISO 8601 UTC format) to begin the unmanage period.
@@ -126,6 +130,7 @@ def main():
             state=dict(required=True, choices=['managed', 'unmanaged']),
             node_id=dict(required=False),
             ip_address=dict(required=False),
+            dns_name=dict(required=False),
             unmanage_from=dict(required=False, default=None),
             unmanage_until=dict(required=False, default=None),
             is_relative=dict(required=False, default=False, type='bool')
@@ -154,7 +159,6 @@ def main():
     elif module.params['state'] == 'unmanaged':
         unmanage_node(module)
 
-
 def _get_node(module):
     node = {}
     if module.params['node_id'] is not None:
@@ -171,9 +175,16 @@ def _get_node(module):
             '@ip_addr',
             ip_addr = module.params['ip_address'])
 
+    elif module.params['dns_name'] is not None:
+        # search for DNS Name
+        results = __SWIS__.query(
+            'SELECT NodeID, Caption, Unmanaged, UnManageFrom, UnManageUntil FROM Orion.Nodes WHERE DNS = '
+            '@dns_name',
+            dns_name = module.params['dns_name'])
+
     else:
         # no id provided
-        module.fail_json(msg="no node_id or ip_address provided")
+        module.fail_json(msg="You must provide either node_id, IP Address, or DNS Name")
 
     if results['results']:
         node['nodeId'] = results['results'][0]['NodeID']
@@ -183,7 +194,6 @@ def _get_node(module):
         node['unManageFrom'] = str(pd.to_datetime(results['results'][0]['UnManageFrom']).isoformat())
         node['unManageUntil'] = str(pd.to_datetime(results['results'][0]['UnManageUntil']).isoformat())
     return node
-
 
 def remanage_node(module):
     node = _get_node(module)
@@ -196,7 +206,6 @@ def remanage_node(module):
         module.exit_json(changed=True, msg="{0} has been remanaged".format(node['caption']))
     except Exception as e:
         module.fail_json(msg=to_native(e), exception=traceback.format_exc())
-
 
 def unmanage_node(module):
     now = datetime.utcnow()
@@ -226,7 +235,6 @@ def unmanage_node(module):
         module.exit_json(changed=True, msg=msg)
     except Exception as e:
         module.fail_json(msg=to_native(e), exception=traceback.format_exc())
-
 
 if __name__ == '__main__':
     main()
