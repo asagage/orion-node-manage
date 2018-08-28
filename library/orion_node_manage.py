@@ -222,7 +222,7 @@ def unmanage_node(module):
             module.exit_json(changed=False)
     try:
         __SWIS__.invoke('Orion.Nodes', 'Unmanage', node['netObjectId'], unmanage_from, unmanage_until, is_relative)
-        msg = "{} will be unmanaged from {} until {}" % (node['caption'], unmanage_from, unmanage_until)
+        msg = "{0} will be unmanaged from {1} until {2}".format(node['caption'], unmanage_from, unmanage_until)
         module.exit_json(changed=True, msg=msg)
     except Exception as e:
         module.fail_json(msg=to_native(e), exception=traceback.format_exc())
