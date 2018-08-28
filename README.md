@@ -15,9 +15,14 @@ Example Playbook
 
 I recommend running this on the local node as follows:
 
-    - hosts: all
+    - name: Setup Local Solarwinds
+      hosts: localhost
+      gather_facts: no
       roles:
-         - { role: asagage.orion-node-manage }
+          - { role: asagage.orion-node-manage }
+
+    - name: Solarwinds Manage Nodes
+      hosts: all
       tasks:
         - name: Unmanage node via IP Address
           local_action:
