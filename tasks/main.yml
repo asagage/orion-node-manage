@@ -1,9 +1,6 @@
 ---
 # tasks file for orion-node-manage
 # Install requirements
-- pip:
-    name: orionsdk
-
 - name: install requirements
   pip:
     name: "{{ item }}"
@@ -11,6 +8,6 @@
   with_items:
     - orionsdk
     - requests
-    - traceback
+#    - traceback
     - datetime
     - pandas
