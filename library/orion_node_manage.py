@@ -193,7 +193,7 @@ def remanage_node(module):
         module.exit_json(changed=False)
     try:
         __SWIS__.invoke('Orion.Nodes', 'Remanage', node['netObjectId'])
-        module.exit_json(changed=True, msg="{} has been remanaged" % (node['caption']))
+        module.exit_json(changed=True, msg="{0} has been remanaged".format(node['caption']))
     except Exception as e:
         module.fail_json(msg=to_native(e), exception=traceback.format_exc())
 
