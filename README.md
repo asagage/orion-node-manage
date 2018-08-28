@@ -40,7 +40,7 @@ I recommend running this on the local node as follows:
 License
 -------
 
-BSD
+MIT
 
 Author Information
 ------------------
