@@ -209,11 +209,11 @@ def unmanage_node(module):
 
     is_relative = module.params['is_relative']
 
-    if not unmanage_until:
-        unmanage_until = tomorrow
-
     if not unmanage_from:
         unmanage_from = now
+
+    if not unmanage_until:
+        unmanage_until = tomorrow
 
     if not node:
         module.fail_json(msg="Monitor not found!")
