@@ -115,10 +115,11 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_native
 
 import requests
+import urllib3
 from datetime import datetime, timedelta
 
 __SWIS__ = None
-requests.packages.urllib3.disable_warnings()
+urllib3.disable_warnings()
 
 def main():
     global __SWIS__
