@@ -17,7 +17,7 @@ DOCUMENTATION = '''
 module: orion_node_manage
 short_description: Unmanages/Remanages Orion Nodes
 description:
-- "Unmanage/Remanage nodes within Orion"
+- "Unmanage/Remanage/Decommission nodes within Orion"
 version_added: "2.0"
 author: "Asa Gage (@asagage)"
 requirements:
@@ -47,6 +47,7 @@ options:
         choices:
             - managed
             - unmanaged
+            - decommissioned
     node_id:
         description:
             - The NodeID of the node to remanage/unmanage.
@@ -101,7 +102,16 @@ EXAMPLES = '''
     username: "username"
     password: "password"
 
+# Decommission a node
+- orion_node_manage:
+    node_id: "123"
+    state: "decommissioned"
+    hostname: "localhost"
+    username: "username"
+    password: "password"
+
 '''
+
 import traceback
 
 # Import OrionSDK
@@ -115,11 +125,10 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_native
 
 import requests
-import urllib3
 from datetime import datetime, timedelta
 
 __SWIS__ = None
-urllib3.disable_warnings()
+requests.packages.urllib3.disable_warnings()
 
 def main():
     global __SWIS__
@@ -128,7 +137,7 @@ def main():
             hostname=dict(required=True),
             username=dict(required=True, no_log=True),
             password=dict(required=True, no_log=True),
-            state=dict(required=True, choices=['managed', 'unmanaged']),
+            state=dict(required=True, choices=['managed', 'unmanaged', 'decommissioned']),
             node_id=dict(required=False),
             ip_address=dict(required=False),
             dns_name=dict(required=False),
@@ -149,6 +158,8 @@ def main():
     }
 
     __SWIS__ = SwisClient(**options)
+    __SWIS__.url = "https://{}:17778/SolarWinds/InformationService/v3/Json/".\
+               format(module.params['hostname'])
 
     try:
         __SWIS__.query('SELECT Uri FROM Orion.Environment')
@@ -159,27 +170,31 @@ def main():
         remanage_node(module)
     elif module.params['state'] == 'unmanaged':
         unmanage_node(module)
+    elif module.params['state'] == 'decommissioned':
+        decommission_node(module)
+
+    module.exit_json()
 
 def _get_node(module):
     node = {}
     if module.params['node_id'] is not None:
         # search for node
         results = __SWIS__.query(
-            'SELECT NodeID, Caption, Unmanaged, UnManageFrom, UnManageUntil FROM Orion.Nodes WHERE NodeID = '
+            'SELECT NodeID, Caption, Unmanaged, UnManageFrom, UnManageUntil, Uri FROM Orion.Nodes WHERE NodeID = '
             '@node_id',
             node_id = module.params['node_id'])
 
     elif module.params['ip_address'] is not None:
         # search for IP
         results = __SWIS__.query(
-            'SELECT NodeID, Caption, Unmanaged, UnManageFrom, UnManageUntil FROM Orion.Nodes WHERE IPAddress = '
+            'SELECT NodeID, Caption, Unmanaged, UnManageFrom, UnManageUntil, Uri FROM Orion.Nodes WHERE IPAddress = '
             '@ip_addr',
             ip_addr = module.params['ip_address'])
 
     elif module.params['dns_name'] is not None:
         # search for DNS Name
         results = __SWIS__.query(
-            'SELECT NodeID, Caption, Unmanaged, UnManageFrom, UnManageUntil FROM Orion.Nodes WHERE DNS = '
+            'SELECT NodeID, Caption, Unmanaged, UnManageFrom, UnManageUntil, Uri FROM Orion.Nodes WHERE DNS = '
             '@dns_name',
             dns_name = module.params['dns_name'])
 
@@ -194,6 +209,7 @@ def _get_node(module):
         node['unmanaged'] = results['results'][0]['Unmanaged']
         node['unManageFrom'] = str(pd.to_datetime(results['results'][0]['UnManageFrom']).isoformat())
         node['unManageUntil'] = str(pd.to_datetime(results['results'][0]['UnManageUntil']).isoformat())
+        node['Uri'] = results['results'][0]['Uri']
     return node
 
 def remanage_node(module):
@@ -234,6 +250,17 @@ def unmanage_node(module):
         __SWIS__.invoke('Orion.Nodes', 'Unmanage', node['netObjectId'], unmanage_from, unmanage_until, is_relative)
         msg = "{0} will be unmanaged from {1} until {2}".format(node['caption'], unmanage_from, unmanage_until)
         module.exit_json(changed=True, msg=msg)
+    except Exception as e:
+        module.fail_json(msg=to_native(e), exception=traceback.format_exc())
+
+def decommission_node(module):
+    node = _get_node(module)
+    if not node:
+        module.fail_json(msg="Monitor not found!")
+    # Decommission/Delete the node
+    try:
+        __SWIS__.delete(node['Uri'])
+        print("Deleting node at URI %s" % (node['Uri']))
     except Exception as e:
         module.fail_json(msg=to_native(e), exception=traceback.format_exc())
 
